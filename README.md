@@ -8,3 +8,10 @@ All tasks has postfix **task**:
 - request_task - gets request to google.com.
 - yield_task - creates generator and calculate sum.
 - async_yield_task - creates async generator and calculate sum.
+
+
+Start RabbitMQ and Celery container:
+
+```shell script
+sudo docker-compose up
+```
