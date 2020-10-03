@@ -1,4 +1,4 @@
-from typing import Generator, AsyncGenerator, NoReturn
+from typing import Generator, AsyncGenerator
 import wave
 import math
 import asyncio
@@ -7,17 +7,19 @@ import io
 import struct
 import subprocess
 
+from taskapp.celery import celery_app
+
 
 def get_request(url: str) -> requests.Response:
     return requests.get(url, timeout=3)
 
 
-def create_generator() -> Generator[int]:
+def create_generator() -> Generator:
     for i in range(10):
         yield i * i
 
 
-async def async_create_generator() -> AsyncGenerator[int]:
+async def async_create_generator() -> AsyncGenerator:
     for i in range(10):
         yield i * i
         await asyncio.sleep(0.1)
@@ -31,7 +33,8 @@ async def read_from_async_gen() -> int:
     return s
 
 
-def subprocess_task() -> NoReturn:
+@celery_app.task(bind=True, name="subprocess_task")
+def subprocess_task(self, *args, **kwargs):
     command = "ls"
 
     process_handle = subprocess.Popen(
@@ -46,7 +49,8 @@ def subprocess_task() -> NoReturn:
     assert not status
 
 
-def create_audio_wave_task() -> NoReturn:
+@celery_app.task(bind=True, name="create_audio_wave_task")
+def create_audio_wave_task(self, *args, **kwargs):
     sample_rate = 44100.0
     duration = 500
     nchannels = 1
@@ -82,7 +86,8 @@ def create_audio_wave_task() -> NoReturn:
     assert ok
 
 
-def async_task() -> NoReturn:
+@celery_app.task(bind=True, name="async_task")
+def async_task(self, *args, **kwargs):
     async def coro() -> int:
         await asyncio.sleep(1)
         return 1
@@ -92,7 +97,8 @@ def async_task() -> NoReturn:
     assert res == 1
 
 
-def request_task() -> NoReturn:
+@celery_app.task(bind=True, name="request_task")
+def request_task(self, *args, **kwargs):
     url = "https://google.com/"
 
     try:
@@ -104,19 +110,18 @@ def request_task() -> NoReturn:
     assert 500 > code
 
 
-def yield_task() -> NoReturn:
+@celery_app.task(bind=True, name="yield_task")
+def yield_task(self, *args, **kwargs):
     assert 285 == sum(create_generator())
 
 
-def async_yield_task() -> NoReturn:
+@celery_app.task(bind=True, name="async_yield_task")
+def async_yield_task(self, *args, **kwargs):
     res = asyncio.run(read_from_async_gen())
     assert 285 == res
 
 
-if __name__ == '__main__':
-    subprocess_task()
-    create_audio_wave_task()
-    async_task()
-    request_task()
-    yield_task()
-    async_yield_task()
+@celery_app.task(bind=True, name="start_many_tasks")
+def start_many_tasks(self, *args, **kwargs):
+    for _ in range(1000):
+        subprocess_task.delay()
