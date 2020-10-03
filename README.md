@@ -8,7 +8,7 @@ All tasks has postfix **task**:
 - request_task - gets request to google.com.
 - yield_task - creates generator and calculate sum.
 - async_yield_task - creates async generator and calculate sum.
-
+- start_many_tasks - starts 1000 subprocess_task.
 
 Start RabbitMQ and Celery container:
 
